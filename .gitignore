@@ -1,0 +1,10 @@
+# Helm packaged charts
+*.tgz
+charts/*.tgz
+**/charts/*.tgz
+
+# Helm dependency charts
+charts/
+**/charts/
+*.idea/
+!charts/

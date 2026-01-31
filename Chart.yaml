@@ -1,0 +1,16 @@
+name: edge-access
+version: 0.1.0
+apiVersion: v2
+description: |
+  Enables edge access to kubernetes services using gateway API. Includes oauth2-proxy for authentication.
+keywords:
+  - edge
+  - access
+  - gatewayAPI
+  - kubernetes
+home: https://github.com/KarafrOrg/edge-access
+dependencies:
+  - name: oauth2-proxy
+    repository: https://oauth2-proxy.github.io/manifests
+    version: 10.1.2
+    condition: oauth2Proxy.enabled

@@ -1,0 +1,55 @@
+edge-access:
+  httpRoute:
+    enabled: true
+    name: ""  # Will default to <release-name>-public-route
+    annotations: {}
+    labels: {}
+
+    parentRefs:
+      - group: gateway.networking.k8s.io
+        kind: Gateway
+        name: public-ingress-gateway
+        namespace: infra-network
+
+    hostnames:
+      - myapp.example.com
+
+    rules:
+      - matches:
+          - path:
+              type: PathPrefix
+              value: /
+        # These backendRefs are only used when oauth2Proxy.enabled is false
+        # When oauth2 is enabled, traffic goes through the oauth2-proxy service first
+        backendRefs:
+          - group: ""
+            kind: Service
+            name: my-backend-service
+            port: 8080
+            weight: 1
+
+  oauth2Proxy:
+    enabled: true
+    service:
+      port: 80
+    externalSecret:
+      enabled: true
+      secretName: oauth2-proxy-secret
+      externalSecretKey: oauth2-proxy-credentials
+
+  # Configure the oauth2-proxy subchart
+  oauth2-proxy:
+    config:
+      existingSecret: oauth2-proxy-secret
+      # Additional oauth2-proxy configuration
+      configFile: |-
+        provider = "oidc"
+        oidc_issuer_url = "https://accounts.google.com"
+        email_domains = ["*"]
+        cookie_secure = true
+        cookie_httponly = true
+        cookie_samesite = "lax"
+        pass_access_token = true
+        pass_authorization_header = true
+        set_authorization_header = true
+        set_xauthrequest = true

@@ -1,0 +1,49 @@
+{{- if and .Values.tests.enabled .Values.oauth2Proxy.enabled }}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ .Release.Name }}-test-oauth2-proxy"
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  containers:
+    - name: oauth2-test
+      image: {{ .Values.tests.image }}
+      command: ['sh', '-c']
+      args:
+        - |
+          set -e
+          echo "Testing OAuth2 Proxy deployment..."
+
+          # Test oauth2-proxy service
+          echo "Testing oauth2-proxy service..."
+          if wget --spider --tries=5 --timeout=15 http://{{ .Release.Name }}-oauth2-proxy:{{ .Values.oauth2Proxy.service.port }}/ping 2>&1; then
+            echo "✓ OAuth2 proxy /ping endpoint is accessible"
+          else
+            echo "✗ OAuth2 proxy /ping endpoint is not accessible"
+            exit 1
+          fi
+
+          # Test oauth2 path routing
+          echo "Testing /oauth2 path..."
+          if wget --spider --tries=3 --timeout=10 http://{{ .Release.Name }}-oauth2-proxy:{{ .Values.oauth2Proxy.service.port }}/oauth2/start 2>&1; then
+            echo "✓ OAuth2 /oauth2/start endpoint exists"
+          else
+            echo "OAuth2 /oauth2/start endpoint is not accessible"
+            exit 1
+          fi
+
+          {{- if .Values.oauth2Proxy.externalSecret.enabled }}
+          echo "External secret is enabled for OAuth2 credentials"
+          {{- end }}
+
+          echo ""
+          echo "OAuth2 proxy tests passed!"
+{{- end }}
+

@@ -1,0 +1,52 @@
+{{- if .Values.tests.enabled }}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ .Release.Name }}-test-connection"
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  containers:
+    - name: wget
+      image: {{ .Values.tests.image }}
+      command: ['sh', '-c']
+      args:
+        - |
+          set -e
+          echo "Testing HTTPRoute configuration..."
+
+          {{- if .Values.oauth2Proxy.enabled }}
+          echo "✓ OAuth2 proxy is enabled"
+          echo "Testing oauth2-proxy service availability..."
+
+          # Test if oauth2-proxy service exists and is accessible
+          if wget --spider --tries=3 --timeout=10 http://{{ .Release.Name }}-oauth2-proxy:{{ .Values.oauth2Proxy.service.port }}/ping 2>&1 | grep -q '200 OK\|404'; then
+            echo "✓ OAuth2 proxy service is reachable"
+          else
+            echo "✗ OAuth2 proxy service is not reachable"
+            exit 1
+          fi
+          {{- else }}
+          echo "✓ OAuth2 proxy is disabled - direct routing mode"
+          {{- end }}
+
+          {{- if .Values.httpRoute.enabled }}
+          echo "✓ HTTPRoute is enabled"
+          echo "HTTPRoute configuration:"
+          echo "  Hostnames: {{ .Values.httpRoute.hostnames | join ", " }}"
+          echo "  Rules: {{ len .Values.httpRoute.rules }}"
+          {{- else }}
+          echo "✗ HTTPRoute is disabled"
+          exit 1
+          {{- end }}
+
+          echo ""
+          echo "All basic tests passed!"
+{{- end }}
+

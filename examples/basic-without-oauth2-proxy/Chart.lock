@@ -1,0 +1,6 @@
+dependencies:
+- name: edge-access
+  repository: file://../..
+  version: 0.1.0
+digest: sha256:0f1f0a0f99d44094c7005abd02d83fe70bdf6daf9bf440fded38001ecc38c0b3
+generated: "2026-01-31T17:53:03.311981+01:00"

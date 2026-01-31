@@ -1,0 +1,10 @@
+apiVersion: v2
+name: multiple-routes-with-oauth2
+description: Example with multiple hostnames and advanced OAuth2 configuration
+type: application
+version: 0.1.0
+
+dependencies:
+  - name: edge-access
+    version: "0.1.0"
+    repository: "file://../.."

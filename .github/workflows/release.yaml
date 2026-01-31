@@ -1,0 +1,80 @@
+name: Release Charts
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Chart.yaml'
+      - 'values.yaml'
+      - 'values.schema.json'
+      - 'templates/**'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        # language=bash
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+
+      - name: Get chart version
+        id: chart_version
+        shell: bash
+        # language=bash
+        run: |
+          VERSION=$(grep '^version:' Chart.yaml | awk '{print $2}')
+          NAME=$(grep '^name:' Chart.yaml | awk '{print $2}')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "name=$NAME" >> $GITHUB_OUTPUT
+
+      - name: Package chart
+        shell: bash
+        # language=bash
+        run: |
+          helm package . -d /tmp/charts
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.chart_version.outputs.name }}-${{ steps.chart_version.outputs.version }}
+          files: /tmp/charts/*.tgz
+          generate_release_notes: true
+
+      - name: Checkout gh-pages
+        shell: bash
+        # language=bash
+        run: |
+          git fetch origin gh-pages 2>/dev/null || true
+          git checkout gh-pages 2>/dev/null || git checkout --orphan gh-pages
+
+      - name: Update index
+        shell: bash
+        # language=bash
+        run: |
+          # Copy packaged chart from temp location
+          cp /tmp/charts/*.tgz .
+
+          # Generate or update repository index
+          helm repo index . --url '${{ github.server_url }}/${{ github.repository }}' --merge index.yaml 2>/dev/null || helm repo index . --url '${{ github.server_url }}/${{ github.repository }}'
+
+          # Commit and push changes
+          git add index.yaml *.tgz
+          git commit -m "Release ${{ steps.chart_version.outputs.name }}-${{ steps.chart_version.outputs.version }}" || echo "No changes to commit"
+          git push origin gh-pages

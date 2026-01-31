@@ -1,0 +1,87 @@
+edge-access:
+  httpRoute:
+    enabled: true
+    name: "secure-app-route"
+    annotations:
+      description: "Application with custom secret store"
+    labels:
+      app: secure-app
+      security: high
+
+    parentRefs:
+      - group: gateway.networking.k8s.io
+        kind: Gateway
+        name: public-ingress-gateway
+        namespace: infra-network
+
+    hostnames:
+      - secure.example.com
+
+    rules:
+      - matches:
+          - path:
+              type: PathPrefix
+              value: /
+        backendRefs:
+          - group: ""
+            kind: Service
+            name: secure-backend-service
+            port: 8443
+            weight: 1
+
+  oauth2Proxy:
+    enabled: true
+    service:
+      port: 80
+    externalSecret:
+      enabled: true
+      secretName: custom-oauth2-secret
+      externalSecretKey: oauth2-credentials-path
+
+  oauth2-proxy:
+    config:
+      existingSecret: custom-oauth2-secret
+      configFile: |-
+        provider = "oidc"
+        oidc_issuer_url = "https://auth.example.com"
+        email_domains = ["example.com"]
+        cookie_secure = true
+        cookie_httponly = true
+        cookie_samesite = "strict"
+        pass_access_token = true
+
+# Additional resources to deploy alongside edge-access
+# This shows how you can extend the chart with custom resources
+
+# Custom SecretStore for external-secrets
+customSecretStore:
+  enabled: true
+  name: vault-backend
+  spec:
+    provider:
+      vault:
+        server: "https://vault.example.com"
+        path: "secret"
+        version: "v2"
+        auth:
+          kubernetes:
+            mountPath: "kubernetes"
+            role: "edge-access-role"
+            serviceAccountRef:
+              name: "edge-access-sa"
+
+# Custom ServiceAccount with specific annotations
+customServiceAccount:
+  enabled: true
+  name: edge-access-sa
+  annotations:
+    vault.hashicorp.com/role: "edge-access-role"
+    vault.hashicorp.com/agent-inject: "true"
+
+# RBAC for service account
+customRBAC:
+  enabled: true
+  rules:
+    - apiGroups: [""]
+      resources: ["secrets"]
+      verbs: ["get", "list", "watch"]

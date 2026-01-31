@@ -1,0 +1,107 @@
+{{- if and .Values.tests.enabled .Values.httpRoute.enabled }}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ .Release.Name }}-test-httproute"
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  serviceAccountName: {{ .Release.Name }}-test-sa
+  containers:
+    - name: kubectl
+      image: {{ .Values.tests.kubectlImage }}
+      command: ['sh', '-c']
+      args:
+        - |
+          set -e
+          echo "Testing HTTPRoute resource..."
+
+          ROUTE_NAME="{{ .Values.httpRoute.name | default (printf "%s-public-route" .Release.Name) }}"
+          echo "Looking for HTTPRoute: $ROUTE_NAME"
+
+          # Check if HTTPRoute exists
+          if kubectl get httproute "$ROUTE_NAME" -n {{ .Release.Namespace }} > /dev/null 2>&1; then
+            echo "✓ HTTPRoute $ROUTE_NAME exists"
+          else
+            echo "✗ HTTPRoute $ROUTE_NAME not found"
+            exit 1
+          fi
+
+          # Validate HTTPRoute configuration
+          echo "Validating HTTPRoute configuration..."
+
+          # Check hostnames
+          {{- range .Values.httpRoute.hostnames }}
+          if kubectl get httproute "$ROUTE_NAME" -n {{ $.Release.Namespace }} -o yaml | grep -q "{{ . }}"; then
+            echo "✓ Hostname {{ . }} is configured"
+          else
+            echo "✗ Hostname {{ . }} not found in HTTPRoute"
+            exit 1
+          fi
+          {{- end }}
+
+          # Check parent refs
+          {{- range .Values.httpRoute.parentRefs }}
+          if kubectl get httproute "$ROUTE_NAME" -n {{ $.Release.Namespace }} -o yaml | grep -q "name: {{ .name }}"; then
+            echo "✓ Parent ref {{ .name }} is configured"
+          else
+            echo "✗ Parent ref {{ .name }} not found"
+            exit 1
+          fi
+          {{- end }}
+
+          {{- if .Values.oauth2Proxy.enabled }}
+          # Check if oauth2-proxy backend is referenced
+          if kubectl get httproute "$ROUTE_NAME" -n {{ $.Release.Namespace }} -o yaml | grep -q "{{ $.Release.Name }}-oauth2-proxy"; then
+            echo "✓ OAuth2 proxy backend is configured in HTTPRoute"
+          else
+            echo "✗ OAuth2 proxy backend not found in HTTPRoute"
+            exit 1
+          fi
+
+          # Check for /oauth2 path
+          if kubectl get httproute "$ROUTE_NAME" -n {{ $.Release.Namespace }} -o yaml | grep -q "value: /oauth2"; then
+            echo "✓ OAuth2 callback path (/oauth2) is configured"
+          else
+            echo "✗ OAuth2 callback path not found"
+            exit 1
+          fi
+          {{- else }}
+          # Check if backend services are directly referenced
+          {{- range .Values.httpRoute.rules }}
+          {{- range .backendRefs }}
+          if kubectl get httproute "$ROUTE_NAME" -n {{ $.Release.Namespace }} -o yaml | grep -q "name: {{ .name }}"; then
+            echo "✓ Backend service {{ .name }} is configured"
+          else
+            echo "✗ Backend service {{ .name }} not found"
+            exit 1
+          fi
+          {{- end }}
+          {{- end }}
+          {{- end }}
+
+          # Verify the number of rules
+          RULE_COUNT=$(kubectl get httproute "$ROUTE_NAME" -n {{ $.Release.Namespace }} -o json | grep -c '"matches":' || echo "0")
+          {{- if .Values.oauth2Proxy.enabled }}
+          EXPECTED_RULES={{ add (len .Values.httpRoute.rules) 1 }}
+          {{- else }}
+          EXPECTED_RULES={{ len .Values.httpRoute.rules }}
+          {{- end }}
+
+          if [ "$RULE_COUNT" -ge "$EXPECTED_RULES" ]; then
+            echo "✓ HTTPRoute has expected number of rules (found: $RULE_COUNT, expected: >= $EXPECTED_RULES)"
+          else
+            echo "✗ HTTPRoute rule count mismatch (found: $RULE_COUNT, expected: >= $EXPECTED_RULES)"
+            exit 1
+          fi
+
+          echo ""
+          echo "HTTPRoute tests passed!"
+{{- end }}
+

@@ -1,0 +1,62 @@
+# HTTPRoute configuration
+httpRoute:
+  enabled: true
+  name: ""  # Defaults to <release-name>-public-route if not specified
+  annotations: {}
+  labels: {}
+
+  # Gateway parent references
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: public-ingress-gateway
+      namespace: infra-network
+
+  # Hostnames for the route
+  hostnames:
+    - seaweed.karafra.net
+
+  # Application routes
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      # Backend service configuration (used when oauth2Proxy.enabled is false)
+      backendRefs:
+        - group: ""
+          kind: Service
+          name: seaweed-admin
+          port: 8080
+          weight: 1
+
+# OAuth2 Proxy configuration
+oauth2Proxy:
+  # Enable or disable OAuth2 proxy
+  enabled: true
+
+  # Service port for oauth2-proxy
+  service:
+    port: 80
+
+  # External secret configuration
+  externalSecret:
+    enabled: true
+    secretName: oauth2-proxy-secret
+    externalSecretKey: oauth2-proxy-credentials
+
+# OAuth2-proxy helm chart values
+# This section is passed to the oauth2-proxy subchart
+# Only used when oauth2Proxy.enabled is true
+oauth2-proxy:
+  config:
+    existingSecret: oauth2-proxy-secret
+    externalSecretKey: oauth2-proxy-credentials
+
+# Helm test configuration
+tests:
+  enabled: true
+  # Image for basic connectivity tests
+  image: busybox:1.36
+  # Image with kubectl for Kubernetes resource validation
+  kubectlImage: bitnami/kubectl:1.31

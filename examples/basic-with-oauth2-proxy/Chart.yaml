@@ -1,0 +1,10 @@
+apiVersion: v2
+name: basic-with-oauth2-proxy
+description: Example of edge-access with OAuth2 proxy enabled
+type: application
+version: 0.1.0
+
+dependencies:
+  - name: edge-access
+    version: "0.1.0"
+    repository: "file://../.."

@@ -1,0 +1,125 @@
+edge-access:
+  httpRoute:
+    enabled: true
+    name: "multi-domain-route"
+    annotations:
+      description: "Multi-domain application with OAuth2"
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    labels:
+      app: enterprise-app
+      environment: production
+      team: platform
+
+    parentRefs:
+      - group: gateway.networking.k8s.io
+        kind: Gateway
+        name: public-ingress-gateway
+        namespace: infra-network
+
+    # Multiple hostnames for the same application
+    hostnames:
+      - app.example.com
+      - app.example.org
+      - enterprise.example.com
+
+    rules:
+      # Admin interface - requires authentication
+      - matches:
+          - path:
+              type: PathPrefix
+              value: /admin
+        backendRefs:
+          - group: ""
+            kind: Service
+            name: admin-backend-service
+            port: 8080
+            weight: 1
+
+      # API endpoints
+      - matches:
+          - path:
+              type: PathPrefix
+              value: /api/v2
+        backendRefs:
+          - group: ""
+            kind: Service
+            name: api-v2-service
+            port: 9000
+            weight: 1
+
+      # Main application
+      - matches:
+          - path:
+              type: PathPrefix
+              value: /
+        backendRefs:
+          - group: ""
+            kind: Service
+            name: frontend-service
+            port: 3000
+            weight: 1
+
+  oauth2Proxy:
+    enabled: true
+    service:
+      port: 80
+    externalSecret:
+      enabled: true
+      secretName: enterprise-oauth2-secret
+      externalSecretKey: enterprise-oauth2-credentials
+
+  # Advanced oauth2-proxy configuration
+  oauth2-proxy:
+    config:
+      existingSecret: enterprise-oauth2-secret
+      configFile: |-
+        provider = "oidc"
+        oidc_issuer_url = "https://accounts.google.com"
+        # Restrict to specific email domains
+        email_domains = ["example.com", "example.org"]
+        # Whitelist specific users
+        authenticated_emails_file = "/etc/oauth2-proxy/emails/authenticated-emails.txt"
+        cookie_secure = true
+        cookie_httponly = true
+        cookie_samesite = "lax"
+        cookie_name = "_oauth2_proxy_enterprise"
+        cookie_expire = "168h"  # 7 days
+        # Pass user information to backend
+        pass_access_token = true
+        pass_authorization_header = true
+        pass_user_headers = true
+        set_authorization_header = true
+        set_xauthrequest = true
+        # Skip authentication for specific paths
+        skip_auth_routes = [
+          "GET=/health",
+          "GET=/metrics",
+          "GET=/favicon.ico"
+        ]
+        # Logging
+        request_logging = true
+        auth_logging = true
+        standard_logging = true
+
+    # Resource limits for production
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+
+    # High availability
+    replicaCount: 2
+
+    # Pod disruption budget
+    podDisruptionBudget:
+      enabled: true
+      minAvailable: 1
+
+    # Security context
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 2000
+      fsGroup: 2000

@@ -1,0 +1,299 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "edge-access Helm Chart Values",
+  "description": "Schema for edge-access Helm chart configuration values",
+  "type": "object",
+  "properties": {
+    "httpRoute": {
+      "type": "object",
+      "description": "HTTPRoute configuration for Gateway API",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable HTTPRoute resource creation",
+          "default": true
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the HTTPRoute resource. Defaults to <release-name>-public-route if empty"
+        },
+        "annotations": {
+          "type": "object",
+          "description": "Annotations to add to the HTTPRoute resource",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "labels": {
+          "type": "object",
+          "description": "Labels to add to the HTTPRoute resource",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "parentRefs": {
+          "type": "array",
+          "description": "Gateway parent references",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "namespace"
+            ],
+            "properties": {
+              "group": {
+                "type": "string",
+                "description": "Group of the parent resource",
+                "default": "gateway.networking.k8s.io"
+              },
+              "kind": {
+                "type": "string",
+                "description": "Kind of the parent resource",
+                "default": "Gateway"
+              },
+              "name": {
+                "type": "string",
+                "description": "Name of the parent Gateway"
+              },
+              "namespace": {
+                "type": "string",
+                "description": "Namespace of the parent Gateway"
+              }
+            }
+          }
+        },
+        "hostnames": {
+          "type": "array",
+          "description": "List of hostnames for the HTTPRoute",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$",
+            "description": "DNS hostname"
+          }
+        },
+        "rules": {
+          "type": "array",
+          "description": "HTTPRoute rules configuration",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "matches",
+              "backendRefs"
+            ],
+            "properties": {
+              "matches": {
+                "type": "array",
+                "description": "Route matching rules",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "path"
+                  ],
+                  "properties": {
+                    "path": {
+                      "type": "object",
+                      "required": [
+                        "value"
+                      ],
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "Exact",
+                            "PathPrefix",
+                            "RegularExpression"
+                          ],
+                          "default": "PathPrefix",
+                          "description": "Type of path matching"
+                        },
+                        "value": {
+                          "type": "string",
+                          "description": "Path value to match"
+                        }
+                      }
+                    },
+                    "headers": {
+                      "type": "array",
+                      "description": "HTTP header matches",
+                      "items": {
+                        "type": "object"
+                      }
+                    },
+                    "queryParams": {
+                      "type": "array",
+                      "description": "Query parameter matches",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  }
+                }
+              },
+              "backendRefs": {
+                "type": "array",
+                "description": "Backend service references (used when oauth2Proxy.enabled is false)",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "name",
+                    "port"
+                  ],
+                  "properties": {
+                    "group": {
+                      "type": "string",
+                      "description": "API group of the backend resource",
+                      "default": ""
+                    },
+                    "kind": {
+                      "type": "string",
+                      "description": "Kind of the backend resource",
+                      "default": "Service"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Name of the backend service"
+                    },
+                    "port": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 65535,
+                      "description": "Port number of the backend service"
+                    },
+                    "weight": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "default": 1,
+                      "description": "Weight for traffic distribution"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "enabled",
+        "parentRefs",
+        "hostnames",
+        "rules"
+      ]
+    },
+    "oauth2Proxy": {
+      "type": "object",
+      "description": "OAuth2 Proxy configuration",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable or disable OAuth2 proxy",
+          "default": true
+        },
+        "service": {
+          "type": "object",
+          "description": "OAuth2 proxy service configuration",
+          "properties": {
+            "port": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535,
+              "default": 80,
+              "description": "Service port for oauth2-proxy"
+            }
+          },
+          "required": [
+            "port"
+          ]
+        },
+        "externalSecret": {
+          "type": "object",
+          "description": "External secret configuration for OAuth2 credentials",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable ExternalSecret resource creation",
+              "default": true
+            },
+            "secretName": {
+              "type": "string",
+              "description": "Name of the Kubernetes secret to create",
+              "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+            },
+            "externalSecretKey": {
+              "type": "string",
+              "description": "Key in GCP Secret Manager containing OAuth2 credentials"
+            }
+          },
+          "required": [
+            "enabled",
+            "secretName",
+            "externalSecretKey"
+          ]
+        }
+      },
+      "required": [
+        "enabled",
+        "service",
+        "externalSecret"
+      ]
+    },
+    "oauth2-proxy": {
+      "type": "object",
+      "description": "Configuration passed to the oauth2-proxy subchart. See https://github.com/oauth2-proxy/manifests for all options",
+      "properties": {
+        "config": {
+          "type": "object",
+          "description": "OAuth2-proxy configuration",
+          "properties": {
+            "existingSecret": {
+              "type": "string",
+              "description": "Name of existing secret containing OAuth2 credentials"
+            },
+            "externalSecretKey": {
+              "type": "string",
+              "description": "Key in the external secret"
+            }
+          }
+        }
+      }
+    },
+    "tests": {
+      "type": "object",
+      "description": "Helm test configuration",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable Helm tests",
+          "default": true
+        },
+        "image": {
+          "type": "string",
+          "description": "Image for basic connectivity tests",
+          "default": "busybox:1.36",
+          "pattern": "^[a-zA-Z0-9._/-]+:[a-zA-Z0-9._-]+$"
+        },
+        "kubectlImage": {
+          "type": "string",
+          "description": "Image with kubectl for Kubernetes resource validation",
+          "default": "bitnami/kubectl:1.31",
+          "pattern": "^[a-zA-Z0-9._/-]+:[a-zA-Z0-9._-]+$"
+        }
+      },
+      "required": [
+        "enabled",
+        "image",
+        "kubectlImage"
+      ]
+    }
+  },
+  "required": [
+    "httpRoute",
+    "oauth2Proxy",
+    "tests"
+  ]
+}
+

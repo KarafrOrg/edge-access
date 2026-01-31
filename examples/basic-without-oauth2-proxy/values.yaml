@@ -1,0 +1,66 @@
+edge-access:
+  httpRoute:
+    enabled: true
+    name: "public-api-route"
+    annotations:
+      description: "Public API route without authentication"
+    labels:
+      app: public-api
+      tier: frontend
+
+    parentRefs:
+      - group: gateway.networking.k8s.io
+        kind: Gateway
+        name: public-ingress-gateway
+        namespace: infra-network
+
+    hostnames:
+      - api.example.com
+
+    rules:
+      # API v1 endpoint
+      - matches:
+          - path:
+              type: PathPrefix
+              value: /api/v1
+        backendRefs:
+          - group: ""
+            kind: Service
+            name: api-v1-service
+            port: 8080
+            weight: 1
+
+      # Health check endpoint
+      - matches:
+          - path:
+              type: Exact
+              value: /health
+        backendRefs:
+          - group: ""
+            kind: Service
+            name: api-v1-service
+            port: 8080
+            weight: 1
+
+      # Static content
+      - matches:
+          - path:
+              type: PathPrefix
+              value: /static
+        backendRefs:
+          - group: ""
+            kind: Service
+            name: static-content-service
+            port: 80
+            weight: 1
+
+  # Disable OAuth2 proxy - traffic goes directly to backend services
+  oauth2Proxy:
+    enabled: false
+    service:
+      port: 80
+    externalSecret:
+      enabled: false
+      secretName: ""
+      externalSecretKey: ""
+

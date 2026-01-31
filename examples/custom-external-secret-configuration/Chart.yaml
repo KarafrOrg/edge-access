@@ -1,0 +1,10 @@
+apiVersion: v2
+name: custom-external-secret-configuration
+description: Example with custom external secret store configuration
+type: application
+version: 0.1.0
+
+dependencies:
+  - name: edge-access
+    version: "0.1.0"
+    repository: "file://../.."

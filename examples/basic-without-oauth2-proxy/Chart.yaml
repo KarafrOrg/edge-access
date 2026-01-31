@@ -1,0 +1,10 @@
+apiVersion: v2
+name: basic-without-oauth2-proxy
+description: Example of edge-access without OAuth2 proxy for public APIs
+type: application
+version: 0.1.0
+
+dependencies:
+  - name: edge-access
+    version: "0.1.0"
+    repository: "file://../.."
