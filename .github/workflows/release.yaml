@@ -81,6 +81,6 @@ jobs:
           helm repo index . --url '${{ github.server_url }}/${{ github.repository }}' --merge index.yaml 2>/dev/null || helm repo index . --url '${{ github.server_url }}/${{ github.repository }}'
 
           # Commit and push changes
-          git add index.yaml *.tgz
+          git add -f index.yaml *.tgz
           git commit -m "Release ${{ steps.chart_version.outputs.name }}-${{ steps.chart_version.outputs.version }}" || echo "No changes to commit"
           git push origin gh-pages
