@@ -2,7 +2,7 @@ apiVersion: v1
 entries:
   edge-access:
   - apiVersion: v2
-    created: "2026-01-31T17:15:07.046148418Z"
+    created: "2026-01-31T21:19:33.70299861Z"
     dependencies:
     - condition: oauth2Proxy.enabled
       name: oauth2-proxy
@@ -10,7 +10,7 @@ entries:
       version: 10.1.2
     description: 'Enables edge access to kubernetes services using gateway API. Includes
       oauth2-proxy for authentication. '
-    digest: 5eafc11a44300b3d363abdf4f9db1ba891d78e2d43f41a65f31253b8fea0cb58
+    digest: 6e38fdf932d1122f70c24871027dc20cb7248988d155f2729785788ed6be8909
     home: https://github.com/KarafrOrg/edge-access
     keywords:
     - edge
@@ -19,9 +19,7 @@ entries:
     - kubernetes
     name: edge-access
     urls:
-    - https://karafrorg.github.io/object-buckets/object-buckets-0.1.0.tgz
-    - https://github.com/KarafrOrg/edge-access/edge-access-0.1.0/edge-access-0.1.0.tgz
-    - https://KarafrOrg.github.io/edge-access/edge-access-0.1.0.tgz
+    - KarafrOrg.github.io/edge-access/edge-access-0.1.0.tgz
     version: 0.1.0
   oauth2-proxy:
   - annotations:
@@ -35,7 +33,7 @@ entries:
               url: https://github.com/oauth2-proxy/manifests/issues/376
     apiVersion: v2
     appVersion: 7.13.0
-    created: "2026-01-31T17:15:07.050505726Z"
+    created: "2026-01-31T21:19:33.707458475Z"
     dependencies:
     - condition: redis-ha.enabled
       name: redis-ha
@@ -66,6 +64,6 @@ entries:
     - https://github.com/oauth2-proxy/oauth2-proxy
     - https://github.com/oauth2-proxy/manifests
     urls:
-    - https://github.com/KarafrOrg/edge-access/charts/oauth2-proxy-10.1.2.tgz
+    - KarafrOrg.github.io/edge-access/charts/oauth2-proxy-10.1.2.tgz
     version: 10.1.2
-generated: "2026-01-31T17:15:07.039045062Z"
+generated: "2026-01-31T21:19:33.695331441Z"
