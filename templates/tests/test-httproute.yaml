@@ -17,6 +17,7 @@ spec:
     - name: kubectl
       image: {{ .Values.tests.kubectlImage }}
       command: ['sh', '-c']
+      # language=bash
       args:
         - |
           set -e
@@ -27,9 +28,9 @@ spec:
 
           # Check if HTTPRoute exists
           if kubectl get httproute "$ROUTE_NAME" -n {{ .Release.Namespace }} > /dev/null 2>&1; then
-            echo "✓ HTTPRoute $ROUTE_NAME exists"
+            echo "HTTPRoute $ROUTE_NAME exists"
           else
-            echo "✗ HTTPRoute $ROUTE_NAME not found"
+            echo "HTTPRoute $ROUTE_NAME not found"
             exit 1
           fi
 
@@ -39,9 +40,9 @@ spec:
           # Check hostnames
           {{- range .Values.httpRoute.hostnames }}
           if kubectl get httproute "$ROUTE_NAME" -n {{ $.Release.Namespace }} -o yaml | grep -q "{{ . }}"; then
-            echo "✓ Hostname {{ . }} is configured"
+            echo "Hostname {{ . }} is configured"
           else
-            echo "✗ Hostname {{ . }} not found in HTTPRoute"
+            echo "Hostname {{ . }} not found in HTTPRoute"
             exit 1
           fi
           {{- end }}
@@ -49,9 +50,9 @@ spec:
           # Check parent refs
           {{- range .Values.httpRoute.parentRefs }}
           if kubectl get httproute "$ROUTE_NAME" -n {{ $.Release.Namespace }} -o yaml | grep -q "name: {{ .name }}"; then
-            echo "✓ Parent ref {{ .name }} is configured"
+            echo "Parent ref {{ .name }} is configured"
           else
-            echo "✗ Parent ref {{ .name }} not found"
+            echo "Parent ref {{ .name }} not found"
             exit 1
           fi
           {{- end }}
@@ -59,17 +60,17 @@ spec:
           {{- if .Values.oauth2Proxy.enabled }}
           # Check if oauth2-proxy backend is referenced
           if kubectl get httproute "$ROUTE_NAME" -n {{ $.Release.Namespace }} -o yaml | grep -q "{{ $.Release.Name }}-oauth2-proxy"; then
-            echo "✓ OAuth2 proxy backend is configured in HTTPRoute"
+            echo "OAuth2 proxy backend is configured in HTTPRoute"
           else
-            echo "✗ OAuth2 proxy backend not found in HTTPRoute"
+            echo "OAuth2 proxy backend not found in HTTPRoute"
             exit 1
           fi
 
           # Check for /oauth2 path
           if kubectl get httproute "$ROUTE_NAME" -n {{ $.Release.Namespace }} -o yaml | grep -q "value: /oauth2"; then
-            echo "✓ OAuth2 callback path (/oauth2) is configured"
+            echo "OAuth2 callback path (/oauth2) is configured"
           else
-            echo "✗ OAuth2 callback path not found"
+            echo "OAuth2 callback path not found"
             exit 1
           fi
           {{- else }}
@@ -77,9 +78,9 @@ spec:
           {{- range .Values.httpRoute.rules }}
           {{- range .backendRefs }}
           if kubectl get httproute "$ROUTE_NAME" -n {{ $.Release.Namespace }} -o yaml | grep -q "name: {{ .name }}"; then
-            echo "✓ Backend service {{ .name }} is configured"
+            echo "Backend service {{ .name }} is configured"
           else
-            echo "✗ Backend service {{ .name }} not found"
+            echo "Backend service {{ .name }} not found"
             exit 1
           fi
           {{- end }}
@@ -95,13 +96,12 @@ spec:
           {{- end }}
 
           if [ "$RULE_COUNT" -ge "$EXPECTED_RULES" ]; then
-            echo "✓ HTTPRoute has expected number of rules (found: $RULE_COUNT, expected: >= $EXPECTED_RULES)"
+            echo "HTTPRoute has expected number of rules (found: $RULE_COUNT, expected: >= $EXPECTED_RULES)"
           else
-            echo "✗ HTTPRoute rule count mismatch (found: $RULE_COUNT, expected: >= $EXPECTED_RULES)"
+            echo "HTTPRoute rule count mismatch (found: $RULE_COUNT, expected: >= $EXPECTED_RULES)"
             exit 1
           fi
 
           echo ""
           echo "HTTPRoute tests passed!"
 {{- end }}
-

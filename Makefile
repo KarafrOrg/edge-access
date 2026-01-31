@@ -218,4 +218,3 @@ install-tools: ## Install required tools (helm-docs)
 	else \
 		echo "$(GREEN)helm-docs already installed$(NC)"; \
 	fi
-

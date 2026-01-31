@@ -21,15 +21,24 @@ metadata:
     "helm.sh/hook": test
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 rules:
-  - apiGroups: ["gateway.networking.k8s.io"]
-    resources: ["httproutes"]
-    verbs: ["get", "list"]
-  - apiGroups: [""]
-    resources: ["services", "pods"]
-    verbs: ["get", "list"]
-  - apiGroups: ["external-secrets.io"]
-    resources: ["externalsecrets"]
-    verbs: ["get", "list"]
+  - apiGroups: [ "gateway.networking.k8s.io" ]
+    resources: [ "httproutes" ]
+    verbs:
+      - get
+      - list
+  - apiGroups: [ "" ]
+    resources:
+      - services
+      - pods
+    verbs:
+      - get
+      - list
+  - apiGroups: [ "external-secrets.io" ]
+    resources:
+      - externalsecrets
+    verbs:
+      - get
+      - list
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -50,4 +59,3 @@ subjects:
     name: {{ .Release.Name }}-test-sa
     namespace: {{ .Release.Namespace }}
 {{- end }}
-
