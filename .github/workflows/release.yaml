@@ -44,6 +44,12 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "name=$NAME" >> $GITHUB_OUTPUT
 
+      - name: Update dependencies
+        shell: bash
+        # language=bash
+        run: |
+          helm dependency update .
+
       - name: Package chart
         shell: bash
         # language=bash
