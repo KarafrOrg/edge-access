@@ -1,6 +1,7 @@
 # edge-access
 
 ![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square)
+[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/edge-access)](https://artifacthub.io/packages/search?repo=edge-access)
 
 Enables edge access to kubernetes services using gateway API. Includes oauth2-proxy for authentication.
 
