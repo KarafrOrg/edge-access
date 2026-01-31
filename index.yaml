@@ -19,7 +19,9 @@ entries:
     - kubernetes
     name: edge-access
     urls:
-    - https://github.com/KarafrOrg/edge-access/edge-access-0.1.0.tgz
+    - https://karafrorg.github.io/object-buckets/object-buckets-0.1.0.tgz
+    - https://github.com/KarafrOrg/edge-access/edge-access-0.1.0/edge-access-0.1.0.tgz
+    - https://KarafrOrg.github.io/edge-access/edge-access-0.1.0.tgz
     version: 0.1.0
   oauth2-proxy:
   - annotations:
