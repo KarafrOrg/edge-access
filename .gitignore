@@ -8,3 +8,4 @@ charts/
 **/charts/
 *.idea/
 !charts/
+!./edge-access-0.1.0.tgz
