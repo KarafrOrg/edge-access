@@ -48,7 +48,7 @@ spec:
     - matches:
         - path:
             type: PathPrefix
-            value: {{ .Values.frontendProxy.faro.path | quote }}
+            value: {{ .Values.frontendProxy.telemetry.path | quote }}
       backendRefs:
         - group: ''
           kind: Service

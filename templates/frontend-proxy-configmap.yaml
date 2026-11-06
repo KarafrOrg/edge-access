@@ -1,19 +1,19 @@
 {{- if .Values.frontendProxy.enabled }}
 {{- $proxy := .Values.frontendProxy }}
 {{- $name := $proxy.name | default (printf "%s-frontend-proxy" .Release.Name) }}
-{{- $faroHost := required "frontendProxy.faro.host is required when frontendProxy is enabled" $proxy.faro.host }}
+{{- $telemetryHost := required "frontendProxy.telemetry.host is required when frontendProxy is enabled" $proxy.telemetry.host }}
 {{- $upstreamHost := $proxy.upstream.host }}
 {{- $upstreamPort := $proxy.upstream.port }}
 {{- if .Values.oauth2Proxy.enabled }}
-{{- if or (eq $proxy.faro.path "/oauth2") (hasPrefix "/oauth2/" $proxy.faro.path) }}
-{{- fail "frontendProxy.faro.path must not be under /oauth2 when OAuth2 is enabled" }}
+{{- if or (eq $proxy.telemetry.path "/oauth2") (hasPrefix "/oauth2/" $proxy.telemetry.path) }}
+{{- fail "frontendProxy.telemetry.path must not be under /oauth2 when OAuth2 is enabled" }}
 {{- end }}
 {{- $upstreamHost = printf "%s-oauth2-proxy.%s.svc.cluster.local" .Release.Name .Release.Namespace }}
 {{- $upstreamPort = .Values.oauth2Proxy.service.port }}
 {{- else }}
 {{- $upstreamHost = required "frontendProxy.upstream.host is required when OAuth2 is disabled" $upstreamHost }}
 {{- end }}
-{{- $snippet := printf `<script src="https://unpkg.com/@grafana/faro-web-sdk@%s/dist/bundle/faro-web-sdk.iife.js"></script><script src="https://unpkg.com/@grafana/faro-web-tracing@%s/dist/bundle/faro-web-tracing.iife.js"></script><script>(function(){var f=window.GrafanaFaroWebSdk,t=window.GrafanaFaroWebTracing;if(!f||!t){return;}f.initializeFaro({url:location.origin+%s,app:{name:%s,namespace:%s,environment:%s},ignoreUrls:[/\/stream\//,/\/api\/live\//,/faro\/collect/],instrumentations:[].concat(f.getWebInstrumentations(),[new t.TracingInstrumentation()])});})();</script>` $proxy.faro.version $proxy.faro.version ($proxy.faro.path | toJson) ($proxy.faro.appName | default .Release.Name | toJson) (.Release.Namespace | toJson) ($proxy.faro.environment | toJson) }}
+{{- $snippet := printf `<script src="https://unpkg.com/@grafana/faro-web-sdk@%s/dist/bundle/faro-web-sdk.iife.js"></script><script src="https://unpkg.com/@grafana/faro-web-tracing@%s/dist/bundle/faro-web-tracing.iife.js"></script><script>(function(){var f=window.GrafanaFaroWebSdk,t=window.GrafanaFaroWebTracing;if(!f||!t){return;}f.initializeFaro({url:location.origin+%s,app:{name:%s,namespace:%s,environment:%s},ignoreUrls:[/\/stream\//,/\/api\/live\//,/faro\/collect/],instrumentations:[].concat(f.getWebInstrumentations(),[new t.TracingInstrumentation()])});})();</script>` $proxy.telemetry.version $proxy.telemetry.version ($proxy.telemetry.path | toJson) ($proxy.telemetry.appName | default .Release.Name | toJson) (.Release.Namespace | toJson) ($proxy.telemetry.environment | toJson) }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -39,9 +39,9 @@ data:
                         - name: all
                           domains: ["*"]
                           routes:
-                            - match: { path: {{ $proxy.faro.path | quote }} }
+                            - match: { path: {{ $proxy.telemetry.path | quote }} }
                               route:
-                                cluster: faro
+                                cluster: telemetry
                                 prefix_rewrite: /collect
                                 timeout: 10s
                             - match: { prefix: "/" }
@@ -95,15 +95,15 @@ data:
                   - endpoint:
                       address:
                         socket_address: { address: {{ $upstreamHost | quote }}, port_value: {{ $upstreamPort }} }
-        - name: faro
+        - name: telemetry
           type: STRICT_DNS
           load_assignment:
-            cluster_name: faro
+            cluster_name: telemetry
             endpoints:
               - lb_endpoints:
                   - endpoint:
                       address:
-                        socket_address: { address: {{ $faroHost | quote }}, port_value: {{ $proxy.faro.port }} }
+                        socket_address: { address: {{ $telemetryHost | quote }}, port_value: {{ $proxy.telemetry.port }} }
     admin:
       address:
         socket_address: { address: 127.0.0.1, port_value: 9901 }

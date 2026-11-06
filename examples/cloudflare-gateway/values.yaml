@@ -9,7 +9,7 @@ frontendProxy:
   enabled: true
   upstream:
     host: app.default.svc.cluster.local
-  faro:
+  telemetry:
     host: alloy.infra-monitoring.svc.cluster.local
 
 cloudflareGateway:

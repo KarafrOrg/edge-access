@@ -1,146 +1,71 @@
-# Multiple Routes with OAuth2 Proxy
+# multiple-routes-with-oauth2
 
-This example demonstrates an advanced production-ready setup with multiple hostnames, advanced OAuth2 configuration, and high availability.
+![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
-## Features
+Example with multiple hostnames and advanced OAuth2 configuration
 
-- OAuth2 authentication with domain restrictions
-- Multiple hostnames routing to the same backend
-- Multiple path-based routing rules
-- High availability with 2 replicas
-- Pod disruption budget for reliability
-- Resource limits and requests
-- Security context configuration
-- Selective authentication bypass for health checks
-- Advanced cookie configuration
-- TLS certificate automation with cert-manager
+## Requirements
 
-## Configuration
+| Repository | Name | Version |
+|------------|------|---------|
+| file://../.. | edge-access | 0.1.0 |
 
-The configuration includes:
-- **Multiple Hostnames**: 
-  - `app.example.com`
-  - `app.example.org`
-  - `enterprise.example.com`
-- **Multiple Routes**:
-  - `/admin` → admin-backend-service:8080
-  - `/api/v2` → api-v2-service:9000
-  - `/` → frontend-service:3000
-- **OAuth2 Proxy**: Production-grade configuration
-  - Email domain restrictions
-  - Skip auth for health/metrics endpoints
-  - 7-day cookie expiration
-  - User information passed to backend
-- **High Availability**: 2 replicas with PDB
+## Values
 
-## Use Cases
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| edge-access.httpRoute.annotations."cert-manager.io/cluster-issuer" | string | `"letsencrypt-prod"` |  |
+| edge-access.httpRoute.annotations.description | string | `"Multi-domain application with OAuth2"` |  |
+| edge-access.httpRoute.enabled | bool | `true` |  |
+| edge-access.httpRoute.hostnames[0] | string | `"app.example.com"` |  |
+| edge-access.httpRoute.hostnames[1] | string | `"app.example.org"` |  |
+| edge-access.httpRoute.hostnames[2] | string | `"enterprise.example.com"` |  |
+| edge-access.httpRoute.labels.app | string | `"enterprise-app"` |  |
+| edge-access.httpRoute.labels.environment | string | `"production"` |  |
+| edge-access.httpRoute.labels.team | string | `"platform"` |  |
+| edge-access.httpRoute.name | string | `"multi-domain-route"` |  |
+| edge-access.httpRoute.parentRefs[0].group | string | `"gateway.networking.k8s.io"` |  |
+| edge-access.httpRoute.parentRefs[0].kind | string | `"Gateway"` |  |
+| edge-access.httpRoute.parentRefs[0].name | string | `"public-ingress-gateway"` |  |
+| edge-access.httpRoute.parentRefs[0].namespace | string | `"infra-network"` |  |
+| edge-access.httpRoute.rules[0].backendRefs[0].group | string | `""` |  |
+| edge-access.httpRoute.rules[0].backendRefs[0].kind | string | `"Service"` |  |
+| edge-access.httpRoute.rules[0].backendRefs[0].name | string | `"admin-backend-service"` |  |
+| edge-access.httpRoute.rules[0].backendRefs[0].port | int | `8080` |  |
+| edge-access.httpRoute.rules[0].backendRefs[0].weight | int | `1` |  |
+| edge-access.httpRoute.rules[0].matches[0].path.type | string | `"PathPrefix"` |  |
+| edge-access.httpRoute.rules[0].matches[0].path.value | string | `"/admin"` |  |
+| edge-access.httpRoute.rules[1].backendRefs[0].group | string | `""` |  |
+| edge-access.httpRoute.rules[1].backendRefs[0].kind | string | `"Service"` |  |
+| edge-access.httpRoute.rules[1].backendRefs[0].name | string | `"api-v2-service"` |  |
+| edge-access.httpRoute.rules[1].backendRefs[0].port | int | `9000` |  |
+| edge-access.httpRoute.rules[1].backendRefs[0].weight | int | `1` |  |
+| edge-access.httpRoute.rules[1].matches[0].path.type | string | `"PathPrefix"` |  |
+| edge-access.httpRoute.rules[1].matches[0].path.value | string | `"/api/v2"` |  |
+| edge-access.httpRoute.rules[2].backendRefs[0].group | string | `""` |  |
+| edge-access.httpRoute.rules[2].backendRefs[0].kind | string | `"Service"` |  |
+| edge-access.httpRoute.rules[2].backendRefs[0].name | string | `"frontend-service"` |  |
+| edge-access.httpRoute.rules[2].backendRefs[0].port | int | `3000` |  |
+| edge-access.httpRoute.rules[2].backendRefs[0].weight | int | `1` |  |
+| edge-access.httpRoute.rules[2].matches[0].path.type | string | `"PathPrefix"` |  |
+| edge-access.httpRoute.rules[2].matches[0].path.value | string | `"/"` |  |
+| edge-access.oauth2-proxy.config.configFile | string | `"provider = \"oidc\"\noidc_issuer_url = \"https://accounts.google.com\"\n# Restrict to specific email domains\nemail_domains = [\"example.com\", \"example.org\"]\n# Whitelist specific users\nauthenticated_emails_file = \"/etc/oauth2-proxy/emails/authenticated-emails.txt\"\ncookie_secure = true\ncookie_httponly = true\ncookie_samesite = \"lax\"\ncookie_name = \"_oauth2_proxy_enterprise\"\ncookie_expire = \"168h\"  # 7 days\n# Pass user information to backend\npass_access_token = true\npass_authorization_header = true\npass_user_headers = true\nset_authorization_header = true\nset_xauthrequest = true\n# Skip authentication for specific paths\nskip_auth_routes = [\n  \"GET=/health\",\n  \"GET=/metrics\",\n  \"GET=/favicon.ico\"\n]\n# Logging\nrequest_logging = true\nauth_logging = true\nstandard_logging = true"` |  |
+| edge-access.oauth2-proxy.config.existingSecret | string | `"enterprise-oauth2-secret"` |  |
+| edge-access.oauth2-proxy.podDisruptionBudget.enabled | bool | `true` |  |
+| edge-access.oauth2-proxy.podDisruptionBudget.minAvailable | int | `1` |  |
+| edge-access.oauth2-proxy.replicaCount | int | `2` |  |
+| edge-access.oauth2-proxy.resources.limits.cpu | string | `"500m"` |  |
+| edge-access.oauth2-proxy.resources.limits.memory | string | `"512Mi"` |  |
+| edge-access.oauth2-proxy.resources.requests.cpu | string | `"100m"` |  |
+| edge-access.oauth2-proxy.resources.requests.memory | string | `"128Mi"` |  |
+| edge-access.oauth2-proxy.securityContext.fsGroup | int | `2000` |  |
+| edge-access.oauth2-proxy.securityContext.runAsNonRoot | bool | `true` |  |
+| edge-access.oauth2-proxy.securityContext.runAsUser | int | `2000` |  |
+| edge-access.oauth2Proxy.enabled | bool | `true` |  |
+| edge-access.oauth2Proxy.externalSecret.enabled | bool | `true` |  |
+| edge-access.oauth2Proxy.externalSecret.externalSecretKey | string | `"enterprise-oauth2-credentials"` |  |
+| edge-access.oauth2Proxy.externalSecret.secretName | string | `"enterprise-oauth2-secret"` |  |
+| edge-access.oauth2Proxy.service.port | int | `80` |  |
 
-This configuration is ideal for:
-- Enterprise applications requiring authentication
-- Multi-tenant applications
-- Production environments requiring HA
-- Applications with admin interfaces
-- Services requiring user context in backend
-
-## Prerequisites
-
-- Gateway API CRDs installed
-- A Gateway resource named `public-ingress-gateway` in namespace `infra-network`
-- External Secrets Operator installed
-- OAuth2 credentials configured with allowed domains
-- Cert-manager installed (optional, for TLS)
-- Backend services deployed
-
-## OAuth2 Secret Format
-
-The external secret should contain:
-```json
-{
-  "client-id": "your-oauth2-client-id",
-  "client-secret": "your-oauth2-client-secret",
-  "cookie-secret": "your-random-cookie-secret"
-}
-```
-
-Generate cookie secret:
-```bash
-python -c 'import os,base64; print(base64.urlsafe_b64encode(os.urandom(32)).decode())'
-```
-
-## Installation
-
-```bash
-# From this directory
-helm dependency update
-helm install enterprise-app . -n production
-```
-
-## Verify Installation
-
-```bash
-# Check all resources
-kubectl get all -n production -l app=enterprise-app
-
-# Check HTTPRoute
-kubectl get httproute multi-domain-route -n production -o yaml
-
-# Check OAuth2 proxy pods
-kubectl get pods -n production -l app.kubernetes.io/name=oauth2-proxy
-
-# Check external secret
-kubectl get externalsecret -n production
-
-# Check PDB
-kubectl get pdb -n production
-```
-
-## Testing
-
-```bash
-# Test authentication flow
-curl -v https://app.example.com/
-# Should redirect to OAuth2 provider
-
-# Test health endpoint (should skip auth)
-curl https://app.example.com/health
-
-# Test admin interface
-curl https://app.example.com/admin
-# Should redirect to OAuth2 provider
-
-# Test API
-curl -H "Authorization: Bearer <token>" https://app.example.com/api/v2/data
-```
-
-## Monitoring
-
-```bash
-# Check oauth2-proxy logs
-kubectl logs -n production -l app.kubernetes.io/name=oauth2-proxy -f
-
-# Check metrics
-kubectl port-forward -n production svc/oauth2-proxy 4180:80
-curl http://localhost:4180/metrics
-```
-
-## Scaling
-
-```bash
-# Scale oauth2-proxy replicas
-helm upgrade enterprise-app . -n production \
-  --set edge-access.oauth2-proxy.replicaCount=3
-```
-
-## Cleanup
-
-```bash
-helm uninstall enterprise-app -n production
-```
-
-## Security Notes
-
-- Email domains are restricted to `example.com` and `example.org`
-- Cookies are secure, httponly, and have 7-day expiration
-- OAuth2 proxy runs as non-root user
-- Health and metrics endpoints bypass authentication for monitoring
-- All authentication events are logged
+----------------------------------------------
+Autogenerated from chart metadata using [helm-docs v1.14.2](https://github.com/norwoodj/helm-docs/releases/v1.14.2)

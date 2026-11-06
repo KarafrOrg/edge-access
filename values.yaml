@@ -53,7 +53,7 @@ oauth2-proxy:
     existingSecret: oauth2-proxy-secret
     externalSecretKey: oauth2-proxy-credentials
 
-# Optional Envoy proxy for same-origin Faro telemetry and HTML instrumentation.
+# Optional Envoy proxy for same-origin telemetry and HTML instrumentation.
 frontendProxy:
   enabled: false
   name: ""
@@ -62,7 +62,7 @@ frontendProxy:
   upstream:
     host: ""
     port: 80
-  faro:
+  telemetry:
     host: ""
     port: 12347
     path: /faro/collect

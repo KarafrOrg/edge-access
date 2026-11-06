@@ -16,7 +16,7 @@ frontendProxy:
   enabled: true
   upstream:
     host: grafana.infra-monitoring.svc.cluster.local
-  faro:
+  telemetry:
     host: alloy.infra-monitoring.svc.cluster.local
   nodeSelector:
     node-role.kubernetes.io/control-plane: ""

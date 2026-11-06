@@ -1,78 +1,55 @@
-# Basic Edge Access without OAuth2 Proxy
+# basic-without-oauth2-proxy
 
-This example demonstrates edge-access configuration for public APIs that don't require authentication.
+![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
-## Features
+Example of edge-access without OAuth2 proxy for public APIs
 
-- OAuth2 authentication disabled
-- Direct routing to backend services
-- Multiple path-based routing rules
-- Custom annotations and labels on HTTPRoute
+## Requirements
 
-## Configuration
+| Repository | Name | Version |
+|------------|------|---------|
+| file://../.. | edge-access | 0.1.0 |
 
-The configuration includes:
-- **HTTPRoute**: Creates routes for `api.example.com` with multiple path rules
-  - `/api/v1` → api-v1-service:8080
-  - `/health` → api-v1-service:8080 (exact match)
-  - `/static` → static-content-service:80
-- **OAuth2 Proxy**: Disabled - traffic goes directly to backend
-- **No External Secrets**: Not needed without OAuth2 proxy
+## Values
 
-## Use Cases
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| edge-access.httpRoute.annotations.description | string | `"Public API route without authentication"` |  |
+| edge-access.httpRoute.enabled | bool | `true` |  |
+| edge-access.httpRoute.hostnames[0] | string | `"api.example.com"` |  |
+| edge-access.httpRoute.labels.app | string | `"public-api"` |  |
+| edge-access.httpRoute.labels.tier | string | `"frontend"` |  |
+| edge-access.httpRoute.name | string | `"public-api-route"` |  |
+| edge-access.httpRoute.parentRefs[0].group | string | `"gateway.networking.k8s.io"` |  |
+| edge-access.httpRoute.parentRefs[0].kind | string | `"Gateway"` |  |
+| edge-access.httpRoute.parentRefs[0].name | string | `"public-ingress-gateway"` |  |
+| edge-access.httpRoute.parentRefs[0].namespace | string | `"infra-network"` |  |
+| edge-access.httpRoute.rules[0].backendRefs[0].group | string | `""` |  |
+| edge-access.httpRoute.rules[0].backendRefs[0].kind | string | `"Service"` |  |
+| edge-access.httpRoute.rules[0].backendRefs[0].name | string | `"api-v1-service"` |  |
+| edge-access.httpRoute.rules[0].backendRefs[0].port | int | `8080` |  |
+| edge-access.httpRoute.rules[0].backendRefs[0].weight | int | `1` |  |
+| edge-access.httpRoute.rules[0].matches[0].path.type | string | `"PathPrefix"` |  |
+| edge-access.httpRoute.rules[0].matches[0].path.value | string | `"/api/v1"` |  |
+| edge-access.httpRoute.rules[1].backendRefs[0].group | string | `""` |  |
+| edge-access.httpRoute.rules[1].backendRefs[0].kind | string | `"Service"` |  |
+| edge-access.httpRoute.rules[1].backendRefs[0].name | string | `"api-v1-service"` |  |
+| edge-access.httpRoute.rules[1].backendRefs[0].port | int | `8080` |  |
+| edge-access.httpRoute.rules[1].backendRefs[0].weight | int | `1` |  |
+| edge-access.httpRoute.rules[1].matches[0].path.type | string | `"Exact"` |  |
+| edge-access.httpRoute.rules[1].matches[0].path.value | string | `"/health"` |  |
+| edge-access.httpRoute.rules[2].backendRefs[0].group | string | `""` |  |
+| edge-access.httpRoute.rules[2].backendRefs[0].kind | string | `"Service"` |  |
+| edge-access.httpRoute.rules[2].backendRefs[0].name | string | `"static-content-service"` |  |
+| edge-access.httpRoute.rules[2].backendRefs[0].port | int | `80` |  |
+| edge-access.httpRoute.rules[2].backendRefs[0].weight | int | `1` |  |
+| edge-access.httpRoute.rules[2].matches[0].path.type | string | `"PathPrefix"` |  |
+| edge-access.httpRoute.rules[2].matches[0].path.value | string | `"/static"` |  |
+| edge-access.oauth2Proxy.enabled | bool | `false` |  |
+| edge-access.oauth2Proxy.externalSecret.enabled | bool | `false` |  |
+| edge-access.oauth2Proxy.externalSecret.externalSecretKey | string | `""` |  |
+| edge-access.oauth2Proxy.externalSecret.secretName | string | `""` |  |
+| edge-access.oauth2Proxy.service.port | int | `80` |  |
 
-This configuration is ideal for:
-- Public REST APIs
-- Health check endpoints
-- Static content delivery
-- Services with built-in authentication
-- Internal services behind a VPN
-
-## Prerequisites
-
-- Gateway API CRDs installed
-- A Gateway resource named `public-ingress-gateway` in namespace `infra-network`
-- Backend services deployed and accessible
-
-## Installation
-
-```bash
-# From this directory
-helm dependency update
-helm install public-api . -n my-namespace
-```
-
-## Verify Installation
-
-```bash
-# Check the HTTPRoute
-kubectl get httproute public-api-route -n my-namespace -o yaml
-
-# Verify routing rules
-kubectl describe httproute public-api-route -n my-namespace
-```
-
-## Testing
-
-```bash
-# Test API endpoint
-curl https://api.example.com/api/v1/users
-
-# Test health endpoint
-curl https://api.example.com/health
-
-# Test static content
-curl https://api.example.com/static/logo.png
-```
-
-## Cleanup
-
-```bash
-helm uninstall public-api -n my-namespace
-```
-
-## Notes
-
-- No OAuth2 proxy pods will be created
-- Traffic flows directly from the Gateway to your backend services
-- Ensure your backend services handle any required authentication/authorization
+----------------------------------------------
+Autogenerated from chart metadata using [helm-docs v1.14.2](https://github.com/norwoodj/helm-docs/releases/v1.14.2)
