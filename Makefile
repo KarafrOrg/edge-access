@@ -2,7 +2,7 @@
 .DEFAULT_GOAL := help
 
 # Chart configuration
-CHART_NAME := object-bucket
+CHART_NAME := edge-access
 CHART_VERSION := $(shell grep '^version:' Chart.yaml | awk '{print $$2}')
 CHART_REPO_URL ?= https://charts.example.com
 CHART_REPO_NAME ?= my-charts
@@ -43,6 +43,10 @@ template-examples: ## Generate templates using example values
 .PHONY: validate
 validate: lint template ## Validate chart (lint + template)
 	@echo "$(GREEN)Validation complete$(NC)"
+
+.PHONY: test-render
+test-render: ## Verify rendered chart configurations (requires Python 3 and yq v4)
+	@python3 tests/test_render.py
 
 .PHONY: docs
 docs: ## Generate chart documentation using helm-docs

@@ -1,0 +1,39 @@
+{{- if .Values.cloudflareGateway.enabled }}
+{{- $gateway := .Values.cloudflareGateway }}
+{{- $name := $gateway.name | default .Release.Name }}
+apiVersion: cloudflare-gateway-controller.io/v1
+kind: CloudflareGatewayParameters
+metadata:
+  name: {{ $name | quote }}
+spec:
+  secretRef:
+    name: {{ $gateway.credentials.secretName | default (printf "%s-cloudflare-gateway-creds" .Release.Name) | quote }}
+  tunnel:
+    {{- with $gateway.tunnel.replicas }}
+    replicas:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with $gateway.tunnel.patches }}
+    patches:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- if and (not $gateway.tunnel.replicas) (not $gateway.tunnel.patches) }}
+    {}
+    {{- end }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: {{ $name | quote }}
+spec:
+  gatewayClassName: {{ $gateway.className | quote }}
+  listeners:
+    - name: https
+      protocol: HTTPS
+      port: 443
+  infrastructure:
+    parametersRef:
+      group: cloudflare-gateway-controller.io
+      kind: CloudflareGatewayParameters
+      name: {{ $name | quote }}
+{{- end }}

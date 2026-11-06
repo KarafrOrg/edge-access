@@ -48,6 +48,12 @@ spec:
           {{- end }}
 
           # Check parent refs
+          {{- if .Values.cloudflareGateway.enabled }}
+          if ! kubectl get httproute "$ROUTE_NAME" -n {{ .Release.Namespace }} -o yaml | grep -Fq '{{ .Values.cloudflareGateway.name | default .Release.Name }}'; then
+            echo "Cloudflare Gateway parent not found"
+            exit 1
+          fi
+          {{- else }}
           {{- range .Values.httpRoute.parentRefs }}
           if kubectl get httproute "$ROUTE_NAME" -n {{ $.Release.Namespace }} -o yaml | grep -q "name: {{ .name }}"; then
             echo "Parent ref {{ .name }} is configured"
@@ -56,7 +62,14 @@ spec:
             exit 1
           fi
           {{- end }}
+          {{- end }}
 
+          {{- if .Values.frontendProxy.enabled }}
+          if ! kubectl get httproute "$ROUTE_NAME" -n {{ .Release.Namespace }} -o yaml | grep -Fq '{{ .Values.frontendProxy.name | default (printf "%s-frontend-proxy" .Release.Name) }}'; then
+            echo "Frontend proxy backend not found"
+            exit 1
+          fi
+          {{- end }}
           {{- if .Values.oauth2Proxy.enabled }}
           # Check if oauth2-proxy backend is referenced
           if kubectl get httproute "$ROUTE_NAME" -n {{ $.Release.Namespace }} -o yaml | grep -q "{{ $.Release.Name }}-oauth2-proxy"; then
@@ -73,7 +86,7 @@ spec:
             echo "OAuth2 callback path not found"
             exit 1
           fi
-          {{- else }}
+          {{- else if not .Values.frontendProxy.enabled }}
           # Check if backend services are directly referenced
           {{- range .Values.httpRoute.rules }}
           {{- range .backendRefs }}
@@ -89,11 +102,7 @@ spec:
 
           # Verify the number of rules
           RULE_COUNT=$(kubectl get httproute "$ROUTE_NAME" -n {{ $.Release.Namespace }} -o json | grep -c '"matches":' || echo "0")
-          {{- if .Values.oauth2Proxy.enabled }}
-          EXPECTED_RULES={{ add (len .Values.httpRoute.rules) 1 }}
-          {{- else }}
-          EXPECTED_RULES={{ len .Values.httpRoute.rules }}
-          {{- end }}
+          EXPECTED_RULES={{ add (len .Values.httpRoute.rules) (ternary 1 0 .Values.oauth2Proxy.enabled) (ternary 1 0 .Values.frontendProxy.enabled) }}
 
           if [ "$RULE_COUNT" -ge "$EXPECTED_RULES" ]; then
             echo "HTTPRoute has expected number of rules (found: $RULE_COUNT, expected: >= $EXPECTED_RULES)"

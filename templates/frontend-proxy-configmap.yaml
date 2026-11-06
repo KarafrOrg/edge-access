@@ -1,0 +1,110 @@
+{{- if .Values.frontendProxy.enabled }}
+{{- $proxy := .Values.frontendProxy }}
+{{- $name := $proxy.name | default (printf "%s-frontend-proxy" .Release.Name) }}
+{{- $faroHost := required "frontendProxy.faro.host is required when frontendProxy is enabled" $proxy.faro.host }}
+{{- $upstreamHost := $proxy.upstream.host }}
+{{- $upstreamPort := $proxy.upstream.port }}
+{{- if .Values.oauth2Proxy.enabled }}
+{{- if or (eq $proxy.faro.path "/oauth2") (hasPrefix "/oauth2/" $proxy.faro.path) }}
+{{- fail "frontendProxy.faro.path must not be under /oauth2 when OAuth2 is enabled" }}
+{{- end }}
+{{- $upstreamHost = printf "%s-oauth2-proxy.%s.svc.cluster.local" .Release.Name .Release.Namespace }}
+{{- $upstreamPort = .Values.oauth2Proxy.service.port }}
+{{- else }}
+{{- $upstreamHost = required "frontendProxy.upstream.host is required when OAuth2 is disabled" $upstreamHost }}
+{{- end }}
+{{- $snippet := printf `<script src="https://unpkg.com/@grafana/faro-web-sdk@%s/dist/bundle/faro-web-sdk.iife.js"></script><script src="https://unpkg.com/@grafana/faro-web-tracing@%s/dist/bundle/faro-web-tracing.iife.js"></script><script>(function(){var f=window.GrafanaFaroWebSdk,t=window.GrafanaFaroWebTracing;if(!f||!t){return;}f.initializeFaro({url:location.origin+%s,app:{name:%s,namespace:%s,environment:%s},ignoreUrls:[/\/stream\//,/\/api\/live\//,/faro\/collect/],instrumentations:[].concat(f.getWebInstrumentations(),[new t.TracingInstrumentation()])});})();</script>` $proxy.faro.version $proxy.faro.version ($proxy.faro.path | toJson) ($proxy.faro.appName | default .Release.Name | toJson) (.Release.Namespace | toJson) ($proxy.faro.environment | toJson) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $name | quote }}
+data:
+  # language=yaml
+  envoy.yaml: |
+    static_resources:
+      listeners:
+        - name: http
+          address:
+            socket_address: { address: 0.0.0.0, port_value: 8080 }
+          filter_chains:
+            - filters:
+                - name: envoy.filters.network.http_connection_manager
+                  typed_config:
+                    "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                    stat_prefix: ingress
+                    upgrade_configs:
+                      - upgrade_type: websocket
+                    route_config:
+                      virtual_hosts:
+                        - name: all
+                          domains: ["*"]
+                          routes:
+                            - match: { path: {{ $proxy.faro.path | quote }} }
+                              route:
+                                cluster: faro
+                                prefix_rewrite: /collect
+                                timeout: 10s
+                            - match: { prefix: "/" }
+                              route:
+                                cluster: upstream
+                                timeout: 0s
+                              request_headers_to_add:
+                                - header: { key: accept-encoding, value: identity }
+                                  append_action: OVERWRITE_IF_EXISTS_OR_ADD
+                    http_filters:
+                      - name: envoy.filters.http.lua
+                        typed_config:
+                          "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
+                          default_source_code:
+                            # language=lua
+                            inline_string: |
+                              local snippet = {{ printf "%q" $snippet }}
+                              function envoy_on_response(handle)
+                                local ct = handle:headers():get("content-type")
+                                if ct == nil or not string.find(ct, "text/html", 1, true) then
+                                  return
+                                end
+                                local encoding = handle:headers():get("content-encoding")
+                                if (encoding ~= nil and encoding ~= "identity") or handle:headers():get("content-range") ~= nil then
+                                  return
+                                end
+                                local body = handle:body()
+                                if body == nil then
+                                  return
+                                end
+                                local html = body:getBytes(0, body:length())
+                                local injected, count = string.gsub(html, "</head>", function() return snippet .. "</head>" end, 1)
+                                if count == 0 then
+                                  return
+                                end
+                                body:setBytes(injected)
+                                handle:headers():replace("content-length", tostring(#injected))
+                                handle:headers():remove("etag")
+                                handle:headers():remove("content-md5")
+                              end
+                      - name: envoy.filters.http.router
+                        typed_config:
+                          "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+      clusters:
+        - name: upstream
+          type: STRICT_DNS
+          load_assignment:
+            cluster_name: upstream
+            endpoints:
+              - lb_endpoints:
+                  - endpoint:
+                      address:
+                        socket_address: { address: {{ $upstreamHost | quote }}, port_value: {{ $upstreamPort }} }
+        - name: faro
+          type: STRICT_DNS
+          load_assignment:
+            cluster_name: faro
+            endpoints:
+              - lb_endpoints:
+                  - endpoint:
+                      address:
+                        socket_address: { address: {{ $faroHost | quote }}, port_value: {{ $proxy.faro.port }} }
+    admin:
+      address:
+        socket_address: { address: 127.0.0.1, port_value: 9901 }
+{{- end }}

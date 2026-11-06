@@ -1,0 +1,26 @@
+oauth2Proxy:
+  enabled: false
+
+httpRoute:
+  parentRefs:
+    - name: private-ingress-gateway
+      namespace: infra-network
+      sectionName: https
+  hostnames:
+    - grafana.example.com
+  annotations:
+    external-dns.alpha.kubernetes.io/target: "10.96.0.200"
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
+
+frontendProxy:
+  enabled: true
+  upstream:
+    host: grafana.infra-monitoring.svc.cluster.local
+  faro:
+    host: alloy.infra-monitoring.svc.cluster.local
+  nodeSelector:
+    node-role.kubernetes.io/control-plane: ""
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule

@@ -1,0 +1,15 @@
+{{- if .Values.frontendProxy.enabled }}
+{{- $name := .Values.frontendProxy.name | default (printf "%s-frontend-proxy" .Release.Name) }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name | quote }}
+spec:
+  selector:
+    app.kubernetes.io/name: {{ $name | quote }}
+    app.kubernetes.io/instance: {{ .Release.Name | quote }}
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+{{- end }}

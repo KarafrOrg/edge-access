@@ -53,6 +53,49 @@ oauth2-proxy:
     existingSecret: oauth2-proxy-secret
     externalSecretKey: oauth2-proxy-credentials
 
+# Optional Envoy proxy for same-origin Faro telemetry and HTML instrumentation.
+frontendProxy:
+  enabled: false
+  name: ""
+  image: envoyproxy/envoy:v1.36.2
+  replicas: 2
+  upstream:
+    host: ""
+    port: 80
+  faro:
+    host: ""
+    port: 12347
+    path: /faro/collect
+    version: 2.13.0
+    appName: ""
+    environment: production
+  nodeSelector: {}
+  tolerations: []
+  topologySpreadConstraints: []
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+
+# Optional dedicated Cloudflare Gateway; when disabled, httpRoute.parentRefs is used.
+cloudflareGateway:
+  enabled: false
+  name: ""
+  className: cloudflare-tunnel
+  credentials:
+    secretName: ""  # Defaults to <release-name>-cloudflare-gateway-creds
+    externalSecret:
+      enabled: false
+      storeName: gcp-cluster-secret-store
+      storeKind: ClusterSecretStore
+      accountIdKey: ""
+      apiTokenKey: ""
+  tunnel:
+    replicas: []
+    patches: []
+
 # Helm test configuration
 tests:
   enabled: true

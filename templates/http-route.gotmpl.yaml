@@ -13,11 +13,18 @@ metadata:
   {{- end }}
 spec:
   parentRefs:
+    {{- if .Values.cloudflareGateway.enabled }}
+    - name: {{ .Values.cloudflareGateway.name | default .Release.Name | quote }}
+    {{- else }}
     {{- range .Values.httpRoute.parentRefs }}
     - group: {{ .group | default "gateway.networking.k8s.io" }}
       kind: {{ .kind | default "Gateway" }}
       name: {{ .name }}
       namespace: {{ .namespace }}
+      {{- with .sectionName }}
+      sectionName: {{ . | quote }}
+      {{- end }}
+    {{- end }}
     {{- end }}
   hostnames:
     {{- range .Values.httpRoute.hostnames }}
@@ -37,6 +44,18 @@ spec:
           port: {{ .Values.oauth2Proxy.service.port }}
           weight: 1
     {{- end }}
+    {{- if .Values.frontendProxy.enabled }}
+    - matches:
+        - path:
+            type: PathPrefix
+            value: {{ .Values.frontendProxy.faro.path | quote }}
+      backendRefs:
+        - group: ''
+          kind: Service
+          name: {{ .Values.frontendProxy.name | default (printf "%s-frontend-proxy" .Release.Name) | quote }}
+          port: 80
+          weight: 1
+    {{- end }}
     # Application routes
     {{- range .Values.httpRoute.rules }}
     - matches:
@@ -53,8 +72,18 @@ spec:
             {{- toYaml . | nindent 12 }}
         {{- end }}
         {{- end }}
+      {{- with .filters }}
+      filters:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       backendRefs:
-        {{- if $.Values.oauth2Proxy.enabled }}
+        {{- if $.Values.frontendProxy.enabled }}
+        - group: ''
+          kind: Service
+          name: {{ $.Values.frontendProxy.name | default (printf "%s-frontend-proxy" $.Release.Name) | quote }}
+          port: 80
+          weight: 1
+        {{- else if $.Values.oauth2Proxy.enabled }}
         # Route through OAuth2 proxy for authentication
         - group: ''
           kind: Service

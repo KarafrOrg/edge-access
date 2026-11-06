@@ -1,0 +1,53 @@
+{{- if .Values.frontendProxy.enabled }}
+{{- $proxy := .Values.frontendProxy }}
+{{- $name := $proxy.name | default (printf "%s-frontend-proxy" .Release.Name) }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name | quote }}
+spec:
+  replicas: {{ $proxy.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ $name | quote }}
+      app.kubernetes.io/instance: {{ .Release.Name | quote }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ $name | quote }}
+        app.kubernetes.io/instance: {{ .Release.Name | quote }}
+      annotations:
+        config-hash: {{ include (print $.Template.BasePath "/frontend-proxy-configmap.yaml") . | sha256sum }}
+    spec:
+      {{- with $proxy.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $proxy.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $proxy.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: envoy
+          image: {{ $proxy.image | quote }}
+          args: ["-c", "/etc/envoy/envoy.yaml"]
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            tcpSocket:
+              port: http
+          resources:
+            {{- toYaml $proxy.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/envoy
+      volumes:
+        - name: config
+          configMap:
+            name: {{ $name | quote }}
+{{- end }}

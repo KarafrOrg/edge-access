@@ -1,8 +1,8 @@
 name: edge-access
-version: 0.1.0
+version: 0.2.0
 apiVersion: v2
 description: |
-  Enables edge access to kubernetes services using gateway API. Includes oauth2-proxy for authentication.
+  Publishes Kubernetes services using Gateway API, optional OAuth2, and an Envoy frontend proxy.
 keywords:
   - edge
   - access

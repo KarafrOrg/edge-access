@@ -59,6 +59,10 @@
               "namespace": {
                 "type": "string",
                 "description": "Namespace of the parent Gateway"
+              },
+              "sectionName": {
+                "type": "string",
+                "description": "Gateway listener name"
               }
             }
           }
@@ -261,6 +265,68 @@
         }
       }
     },
+    "frontendProxy": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "name": { "type": "string" },
+        "image": { "type": "string", "minLength": 1 },
+        "replicas": { "type": "integer", "minimum": 1 },
+        "upstream": {
+          "type": "object",
+          "properties": {
+            "host": { "type": "string" },
+            "port": { "type": "integer", "minimum": 1, "maximum": 65535 }
+          }
+        },
+        "faro": {
+          "type": "object",
+          "properties": {
+            "host": { "type": "string" },
+            "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+            "path": { "type": "string", "pattern": "^/[^?#]+$" },
+            "version": { "type": "string", "pattern": "^[0-9A-Za-z._+-]+$" },
+            "appName": { "type": "string" },
+            "environment": { "type": "string" }
+          }
+        },
+        "nodeSelector": { "type": "object", "additionalProperties": { "type": "string" } },
+        "tolerations": { "type": "array", "items": { "type": "object" } },
+        "topologySpreadConstraints": { "type": "array", "items": { "type": "object" } },
+        "resources": { "type": "object" }
+      }
+    },
+    "cloudflareGateway": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "name": { "type": "string" },
+        "className": { "type": "string", "minLength": 1 },
+        "credentials": {
+          "type": "object",
+          "properties": {
+            "secretName": { "type": "string" },
+            "externalSecret": {
+              "type": "object",
+              "properties": {
+                "enabled": { "type": "boolean" },
+                "storeName": { "type": "string", "minLength": 1 },
+                "storeKind": { "type": "string", "enum": ["SecretStore", "ClusterSecretStore"] },
+                "accountIdKey": { "type": "string" },
+                "apiTokenKey": { "type": "string" }
+              }
+            }
+          }
+        },
+        "tunnel": {
+          "type": "object",
+          "properties": {
+            "replicas": { "type": "array", "items": { "type": "object" } },
+            "patches": { "type": "array", "items": { "type": "object" } }
+          }
+        }
+      }
+    },
     "tests": {
       "type": "object",
       "description": "Helm test configuration",
@@ -296,4 +362,3 @@
     "tests"
   ]
 }
-

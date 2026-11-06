@@ -1,0 +1,33 @@
+oauth2Proxy:
+  enabled: false
+
+httpRoute:
+  hostnames:
+    - app.example.com
+
+frontendProxy:
+  enabled: true
+  upstream:
+    host: app.default.svc.cluster.local
+  faro:
+    host: alloy.infra-monitoring.svc.cluster.local
+
+cloudflareGateway:
+  enabled: true
+  credentials:
+    externalSecret:
+      enabled: true
+      accountIdKey: cloudflare-account-id
+      apiTokenKey: cloudflare-api-token
+  tunnel:
+    replicas:
+      - name: zone-a
+        affinity:
+          nodeAffinity:
+            preferredDuringSchedulingIgnoredDuringExecution:
+              - weight: 100
+                preference:
+                  matchExpressions:
+                    - key: topology.kubernetes.io/zone
+                      operator: In
+                      values: [zone-a]

@@ -1,9 +1,10 @@
 # edge-access
 
-![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square)
+![Version: 0.2.0](https://img.shields.io/badge/Version-0.2.0-informational?style=flat-square)
 [![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/edge-access)](https://artifacthub.io/packages/search?repo=edge-access)
 
-Enables edge access to kubernetes services using gateway API. Includes oauth2-proxy for authentication.
+Publishes Kubernetes services through Gateway API, with optional OAuth2 authentication,
+Envoy frontend instrumentation, and Cloudflare Tunnel gateway provisioning.
 
 **Homepage:** <https://github.com/KarafrOrg/edge-access>
 
@@ -12,6 +13,92 @@ Enables edge access to kubernetes services using gateway API. Includes oauth2-pr
 | Repository                               | Name         | Version |
 |------------------------------------------|--------------|---------|
 | https://oauth2-proxy.github.io/manifests | oauth2-proxy | 10.1.2  |
+
+The Gateway API CRDs and an appropriate Gateway controller must already be installed.
+Cloudflare gateway provisioning also requires the Cloudflare Gateway Controller; creating
+an ExternalSecret requires External Secrets Operator and the configured secret store.
+
+## Frontend proxy
+
+The frontend proxy is disabled by default. To expose an application through an existing
+Gateway with Faro browser telemetry, use values such as:
+
+```yaml
+oauth2Proxy:
+  enabled: false
+httpRoute:
+  parentRefs:
+    - name: private-ingress-gateway
+      namespace: infra-network
+      sectionName: https
+  hostnames: [grafana.example.com]
+  annotations:
+    external-dns.alpha.kubernetes.io/target: "10.96.0.200"
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
+frontendProxy:
+  enabled: true
+  upstream:
+    host: grafana.infra-monitoring.svc.cluster.local
+    port: 80
+  faro:
+    host: alloy.infra-monitoring.svc.cluster.local
+```
+
+Each application rule forwards to the proxy Service instead of its `backendRefs`.
+The proxy serves the configured same-origin Faro path by forwarding to `/collect` on
+the Faro receiver, and injects the Faro SDK and tracing scripts into HTML responses.
+An additional HTTPRoute rule exposes that Faro path even when application matches
+are restricted to other paths.
+It preserves WebSocket upgrades and disables upstream compression for HTML injection.
+Compressed and partial responses are passed through without injection.
+The deployment uses two replicas by default; `frontendProxy.nodeSelector`,
+`tolerations`, `topologySpreadConstraints`, and `resources` control placement and
+capacity. Set `frontendProxy.name` to override the release-based resource name.
+Faro loads scripts from `unpkg.com`; browser CSP and access to that host must allow them.
+
+When OAuth2 is also enabled, application traffic goes through Envoy **then** OAuth2
+proxy; `/oauth2` callbacks go directly to OAuth2 proxy. Configure the `oauth2-proxy`
+subchart's upstream to point to the application, not the frontend proxy. The Faro
+collector path bypasses OAuth2, so the receiver must be appropriate for public ingestion.
+`frontendProxy.upstream` is used only when OAuth2 is disabled.
+
+## Dedicated Cloudflare Gateway
+
+Set `cloudflareGateway.enabled: true` to create a Gateway and
+CloudflareGatewayParameters, and attach the HTTPRoute to it instead of `parentRefs`.
+By default the controller reads a pre-existing Secret named
+`<release>-cloudflare-gateway-creds`. Set `credentials.secretName` to use an existing
+shared Secret, or enable `credentials.externalSecret` and provide `accountIdKey` and
+`apiTokenKey` to create it with External Secrets. The Secret must contain
+`CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN`.
+
+`cloudflareGateway.tunnel.replicas` and `patches` are passed through to the controller;
+they can configure named replicas, zone preferences, tolerations and node placement.
+See `examples/frontend-proxy/values.yaml` for the private gateway configuration and
+`examples/cloudflare-gateway/values.yaml` for a dedicated public tunnel.
+These settings do not install or configure the GatewayClass, controller, DNS provider,
+or secret store. HTTPRoute filters are controller-dependent: in particular, the
+Cloudflare Gateway Controller does not support route rewrite filters.
+
+Run `make test-render` to check the default, OAuth, frontend-proxy and Cloudflare
+rendering paths. The checks require Python 3, Helm, yq v4, and restored chart dependencies.
+
+## Additional values
+
+| Key | Default | Description |
+|---|---|---|
+| `frontendProxy.enabled` | `false` | Create the Envoy ConfigMap, Deployment and Service. |
+| `frontendProxy.name` | `<release>-frontend-proxy` | Override all three proxy resource names. |
+| `frontendProxy.image` / `replicas` | `envoyproxy/envoy:v1.36.2` / `2` | Envoy image and replica count. |
+| `frontendProxy.upstream.host` / `port` | `""` / `80` | Application DNS name and port; required when OAuth2 is disabled. |
+| `frontendProxy.faro.host` / `port` | `""` / `12347` | Faro receiver DNS name and port; host is required. |
+| `frontendProxy.faro.path` / `version` | `/faro/collect` / `2.13.0` | Same-origin endpoint and Faro SDK version. |
+| `frontendProxy.faro.appName` / `environment` | `<release>` / `production` | Browser telemetry app name and environment. |
+| `cloudflareGateway.enabled` | `false` | Create a dedicated Cloudflare Gateway. |
+| `cloudflareGateway.name` / `className` | `<release>` / `cloudflare-tunnel` | Gateway name and existing GatewayClass. |
+| `cloudflareGateway.credentials.secretName` | `<release>-cloudflare-gateway-creds` | Existing or generated credential Secret. |
+| `cloudflareGateway.credentials.externalSecret` | disabled | Optional external secret store and account/token key configuration. |
+| `cloudflareGateway.tunnel.replicas` / `patches` | `[]` / `[]` | Controller-specific tunnel replicas and deployment patches. |
 
 ## Values
 
