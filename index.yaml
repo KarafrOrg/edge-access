@@ -2,7 +2,7 @@ apiVersion: v1
 entries:
   edge-access:
   - apiVersion: v2
-    created: "2026-11-06T06:55:06.696643597Z"
+    created: "2026-11-06T07:03:32.050269828Z"
     dependencies:
     - condition: oauth2Proxy.enabled
       name: oauth2-proxy
@@ -10,7 +10,7 @@ entries:
       version: 10.1.2
     description: 'Publishes Kubernetes services using Gateway API, optional OAuth2,
       and an Envoy frontend proxy. '
-    digest: 7b55be76e8ae1a3cb00b8e83937e3d318adc911719007425fac941dec478a5a4
+    digest: 4c394603fcf0ef9f414285d4c625d132ab697b85bad0f8e22d9e06dd263d4259
     home: https://github.com/KarafrOrg/edge-access
     keywords:
     - edge
@@ -22,7 +22,7 @@ entries:
     - https://KarafrOrg.github.io/edge-access/edge-access-0.2.0.tgz
     version: 0.2.0
   - apiVersion: v2
-    created: "2026-11-06T06:55:06.685175869Z"
+    created: "2026-11-06T07:03:32.044405871Z"
     dependencies:
     - condition: oauth2Proxy.enabled
       name: oauth2-proxy
@@ -41,4 +41,4 @@ entries:
     urls:
     - https://KarafrOrg.github.io/edge-access/edge-access-0.1.0.tgz
     version: 0.1.0
-generated: "2026-11-06T06:55:06.676464487Z"
+generated: "2026-11-06T07:03:32.03949157Z"
