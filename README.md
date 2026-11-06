@@ -63,7 +63,7 @@ Publishes Kubernetes services using Gateway API, optional OAuth2, and an Envoy f
 | httpRoute.rules[0].matches[0].path.value                  | string | `"/"`                         |             |
 | oauth2-proxy.config.existingSecret                        | string | `"oauth2-proxy-secret"`       |             |
 | oauth2-proxy.config.externalSecretKey                     | string | `"oauth2-proxy-credentials"`  |             |
-| oauth2Proxy.enabled                                       | bool   | `true`                        |             |
+| oauth2Proxy.enabled                                       | bool   | `false`                       |             |
 | oauth2Proxy.externalSecret.enabled                        | bool   | `true`                        |             |
 | oauth2Proxy.externalSecret.externalSecretKey              | string | `"oauth2-proxy-credentials"`  |             |
 | oauth2Proxy.externalSecret.secretName                     | string | `"oauth2-proxy-secret"`       |             |

@@ -8,9 +8,6 @@ httpRoute:
       sectionName: https
   hostnames:
     - grafana.example.com
-  annotations:
-    external-dns.alpha.kubernetes.io/target: "10.96.0.200"
-    external-dns.alpha.kubernetes.io/cloudflare-proxied: "false"
 
 frontendProxy:
   enabled: true

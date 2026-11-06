@@ -11,7 +11,7 @@
         "enabled": {
           "type": "boolean",
           "description": "Enable HTTPRoute resource creation",
-          "default": true
+          "default": false
         },
         "name": {
           "type": "string",

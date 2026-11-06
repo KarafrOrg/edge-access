@@ -33,7 +33,7 @@ httpRoute:
 # OAuth2 Proxy configuration
 oauth2Proxy:
   # Enable or disable OAuth2 proxy
-  enabled: true
+  enabled: false
 
   # Service port for oauth2-proxy
   service:
